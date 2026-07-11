@@ -27,6 +27,25 @@ void main() {
     expect(totals['2026-07-06'], 20, reason: 'the set logged against the tapped past day');
   });
 
+  testWidgets('a pre-install day within the install week is tappable (back-fill)', (tester) async {
+    // Install Thursday 2026-07-09; today Sat 07-11. Monday ('M', 07-06) is
+    // before install but in the same week, so it should be editable.
+    final (_, repo) = await pumpApp(tester, seed: (repo) async {
+      await repo.patchSettings({'installDate': '2026-07-09'});
+      await repo.ensureWeekPlan(const LocalDate(2026, 7, 6));
+    });
+    await tester.tap(find.text('M'));
+    await tester.pumpAndSettle();
+    expect(find.text('2026-07-06'), findsOneWidget); // day sheet opened for the pre-install day
+    await tester.tap(find.text('Add set'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add'));
+    await settle(tester);
+    final totals = await readStream(
+        tester, repo.watchDayTotals(const LocalDate(2026, 7, 6), const LocalDate(2026, 7, 6)));
+    expect(totals['2026-07-06'], 20);
+  });
+
   testWidgets('future days in the week strip are not tappable', (tester) async {
     await pumpApp(tester, seed: seedMondayInstall); // today = Sat; Sun is future
     // Sunday's chip exists but tapping it opens nothing (openable == false).

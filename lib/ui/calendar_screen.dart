@@ -85,7 +85,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ? DayStatus.future
         : dayStatus(date: d, today: today, installDate: install,
             logged: logged, target: target, rest: rest.contains(d.iso));
-    final openable = status != DayStatus.future && status != DayStatus.preInstall;
+    final openable = install != null &&
+        isDayEditable(date: d, today: today, installDate: install);
     return Opacity(
       opacity: inMonth ? 1 : 0.35,
       child: InkWell(
