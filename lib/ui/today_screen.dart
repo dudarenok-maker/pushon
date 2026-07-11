@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../domain/on_track.dart';
 import '../state/providers.dart';
+import 'settings_screen.dart' show requestBatteryExemption;
 import 'theme.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/week_strip.dart';
@@ -42,6 +43,11 @@ class TodayScreen extends ConsumerWidget {
       if (count == null) return;
       final now = ref.read(clockProvider)();
       await ref.read(repositoryProvider).logSet(date: today, count: count, now: now);
+      final settings = ref.read(settingsProvider).value;
+      if (settings != null && !settings.batteryPromptShown && context.mounted) {
+        await requestBatteryExemption(context);
+        await ref.read(repositoryProvider).patchSettings({'batteryPromptShown': 'true'});
+      }
     }
 
     ref.listen(summaryDueProvider, (prev, next) {

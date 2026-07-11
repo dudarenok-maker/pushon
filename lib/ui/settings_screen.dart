@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../state/providers.dart';
 import 'theme.dart';
@@ -100,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           title: const Text('Reminders not showing up?'),
           subtitle: const Text("Ask Android not to put PushOn to sleep"),
-          onTap: () => requestBatteryExemption(context), // Task 16 provides this
+          onTap: () => requestBatteryExemption(context),
         ),
         const Divider(),
         ListTile(
@@ -113,13 +114,19 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-/// Placeholder until Task 16 wires permission_handler; keeps this task shippable.
 Future<void> requestBatteryExemption(BuildContext context) async {
-  await showDialog<void>(
+  final proceed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      content: const Text('Reminders work best if Android does not put PushOn to sleep.'),
-      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('OK'))],
+      content: const Text(
+          'Reminders work best if Android does not put PushOn to sleep. Allow it?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Not now')),
+        TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Allow')),
+      ],
     ),
   );
+  if (proceed == true) {
+    await Permission.ignoreBatteryOptimizations.request();
+  }
 }

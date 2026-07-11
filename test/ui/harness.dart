@@ -1,6 +1,10 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// `Override` is deliberately excluded from flutter_riverpod's main barrel
+// export (riverpod 3.3.2's `show` list omits it) and only surfaces through
+// this secondary barrel — see flutter_riverpod/misc.dart.
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pushon/app.dart';
 import 'package:pushon/data/db.dart';
@@ -23,6 +27,7 @@ Future<(AppDatabase, PushOnRepository)> pumpApp(
   DateTime? now,
   bool onboarded = true,
   Future<void> Function(PushOnRepository repo)? seed,
+  List<Override> extraOverrides = const [],
 }) async {
   final clock = now ?? DateTime(2026, 7, 11, 9); // a Saturday
   final db = AppDatabase(NativeDatabase.memory());
@@ -38,6 +43,7 @@ Future<(AppDatabase, PushOnRepository)> pumpApp(
     overrides: [
       databaseProvider.overrideWithValue(db),
       clockProvider.overrideWithValue(() => clock),
+      ...extraOverrides,
     ],
     child: const PushOnApp(),
   ));

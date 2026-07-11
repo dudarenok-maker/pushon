@@ -4,6 +4,7 @@ import '../data/db.dart';
 import '../data/notification_scheduler.dart';
 import '../data/repository.dart';
 import '../domain/dates.dart';
+import '../domain/notification_planner.dart';
 import '../domain/streak.dart';
 
 final databaseProvider =
@@ -47,6 +48,39 @@ final summaryDueProvider = FutureProvider<LocalDate?>((ref) async {
   if (install == null || !install.isBefore(currentWeek)) return null; // no completed week yet
   if (s.lastSummaryShownWeek != null && !s.lastSummaryShownWeek!.isBefore(currentWeek)) return null;
   return currentWeek.addDays(-7); // most recent completed week only — never queue
+});
+
+final firstOpenTodayProvider = Provider<DateTime>((ref) => ref.watch(clockProvider)());
+
+/// Recomputes the rest-of-today notification plan on every relevant change
+/// (new set, plan/settings/rest-day edits) and pushes it to the scheduler.
+/// Activated by `ref.watch` from `PushOnApp.build` once onboarding is done.
+final notificationSyncProvider = Provider<void>((ref) {
+  final scheduler = ref.watch(schedulerProvider);
+  if (scheduler == null) return;
+  final today = ref.watch(todayProvider);
+  final plan = ref.watch(weekPlanProvider).value;
+  final settings = ref.watch(settingsProvider).value;
+  final totals = ref.watch(weekTotalsProvider).value;
+  final rest = ref.watch(weekRestDaysProvider).value;
+  final sets = ref.watch(daySetsProvider(today)).value;
+  if (plan == null || settings == null || totals == null || rest == null || sets == null) return;
+
+  final idx = today.weekdayIndex;
+  final target = plan.targets[idx];
+  final logged = totals[today.iso] ?? 0;
+  final planOut = planNotifications(
+    now: ref.watch(clockProvider)(),
+    remainingToday: target - logged,
+    restOrZeroTarget: rest.contains(today.iso) || target == 0,
+    lastSetAt: sets.isEmpty ? null : sets.last.createdAt,
+    firstOpenToday: ref.watch(firstOpenTodayProvider),
+    wakingStartMinutes: settings.wakingStartMinutes,
+    wakingEndMinutes: settings.wakingEndMinutes,
+    nudgeEnabled: settings.nudgeEnabled,
+    reminderEnabled: settings.reminderEnabled,
+  );
+  scheduler.applyPlan(planOut);
 });
 
 final streakProvider = StreamProvider<int>((ref) {

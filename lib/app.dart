@@ -29,6 +29,7 @@ class PushOnApp extends ConsumerWidget {
         if (s.installDate == null) {
           return MaterialApp(theme: buildTheme(), home: const OnboardingScreen());
         }
+        ref.watch(notificationSyncProvider);
         return MaterialApp.router(
           title: 'PushOn',
           theme: buildTheme(),
