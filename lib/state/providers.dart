@@ -88,12 +88,12 @@ final streakProvider = StreamProvider<int>((ref) {
   final today = ref.watch(todayProvider);
   final install = ref.watch(settingsProvider).value?.installDate;
   if (install == null) return Stream.value(0);
-  final logged = repo.watchLoggedDays(install, today);
-  final transparent = repo.watchTransparentDays(install, today);
-  return logged.asyncMap((l) async => computeStreak(
+  // Combine logged + transparent so a rest/sick toggle that bridges a gap
+  // refreshes the streak immediately, not just on the next log (issue #4).
+  return repo.watchStreakInputs(install, today).map((d) => computeStreak(
         today: today,
         installDate: install,
-        loggedDays: l.map(LocalDate.parse).toSet(),
-        transparentDays: (await transparent.first).map(LocalDate.parse).toSet(),
+        loggedDays: d.logged.map(LocalDate.parse).toSet(),
+        transparentDays: d.transparent.map(LocalDate.parse).toSet(),
       ));
 });

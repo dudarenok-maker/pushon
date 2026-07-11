@@ -41,11 +41,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       final stored = plans[d.weekStart.iso];
       if (stored != null) return stored.targets[d.weekdayIndex];
       if (settings == null) return 0;
-      // Preview only — never stored (spec: plans are written on touch).
+      // Preview only — never stored (spec: plans are written on touch). Same
+      // weekSeed as ensureWeekPlan, so the preview matches the eventual plan.
       return distributeWeek(
           weeklyTarget: settings.weeklyTarget,
           easyDay: settings.easyDay,
-          peakDay: settings.peakDay)[d.weekdayIndex];
+          peakDay: settings.peakDay,
+          weekSeed: d.weekStart.epochDay ~/ 7)[d.weekdayIndex];
     }
 
     return Scaffold(

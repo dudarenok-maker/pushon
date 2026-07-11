@@ -109,6 +109,16 @@ class PushOnRepository {
   Stream<Set<String>> watchLoggedDays(LocalDate from, LocalDate to) =>
       watchDayTotals(from, to).map((m) => m.keys.toSet());
 
+  /// Logged and transparent (rest/target-0) day-sets in one stream, so a
+  /// consumer re-emits when *either* changes. The streak needs this: flagging
+  /// a day rest/sick to bridge a gap changes only the transparent set, and a
+  /// stream that watches logged days alone would show a stale streak until the
+  /// next log or a day rollover (issue #4).
+  Stream<({Set<String> logged, Set<String> transparent})> watchStreakInputs(
+          LocalDate from, LocalDate to) =>
+      _combineLatest2(watchLoggedDays(from, to), watchTransparentDays(from, to),
+          (l, t) => (logged: l, transparent: t));
+
   Stream<int> watchBestSet(LocalDate from, LocalDate to) =>
       _liveSets(from, to).watch().map((rows) =>
           rows.isEmpty ? 0 : rows.map((r) => r.count).reduce((a, b) => a > b ? a : b));
@@ -185,7 +195,8 @@ class PushOnRepository {
     if (existing != null) return existing;
     final s = await getSettings();
     final targets = distributeWeek(
-        weeklyTarget: s.weeklyTarget, easyDay: s.easyDay, peakDay: s.peakDay);
+        weeklyTarget: s.weeklyTarget, easyDay: s.easyDay, peakDay: s.peakDay,
+        weekSeed: weekStart.epochDay ~/ 7);
     await _db.into(_db.weekPlans).insert(
         WeekPlansCompanion.insert(
             weekStart: weekStart.iso, weeklyTarget: s.weeklyTarget,
