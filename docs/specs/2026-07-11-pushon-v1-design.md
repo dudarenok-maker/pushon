@@ -67,9 +67,12 @@ Rules around it:
 - Weeks start Monday everywhere: calendar, summary, streak math.
 - **"On track" line** (informational only):
   `X = max(0, W − logged − Σ targets of this week's rest-flagged days) ÷
-  (remaining non-rest days)`. Subtracting rest-day targets means flagging a
-  sick day can never *raise* the catch-up number — the same principle as
-  fixed daily targets. Hidden when no non-rest days remain.
+  (remaining non-rest days)`. A rest day's own target is **written off, not
+  redistributed** onto the remaining days: with 180 logged on Thursday,
+  flagging Friday (75) shows ⌈245/3⌉ = 82, not ⌈320/3⌉ = 107. Resting can
+  shift X by the rounding effect of having fewer days (80 → 82 here), but
+  never dumps the flagged day's burden on you. Hidden when no non-rest days
+  remain.
 
 ## First run and precise semantics
 

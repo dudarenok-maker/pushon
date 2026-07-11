@@ -90,9 +90,13 @@ Expected: `All done!`. Existing README/CLAUDE.md/docs untouched.
 - [ ] **Step 2: Add dependencies (latest stable, resolved now — not pinned from this doc)**
 
 ```powershell
-flutter pub add flutter_riverpod drift drift_flutter go_router flutter_local_notifications timezone uuid permission_handler
+flutter pub add flutter_riverpod drift drift_flutter go_router flutter_local_notifications timezone uuid permission_handler sqlite3 sqlite3_flutter_libs
 flutter pub add --dev drift_dev build_runner
 ```
+
+(`sqlite3` + `sqlite3_flutter_libs` are declared explicitly so
+`NativeDatabase.memory()` in tests and the on-device database both have a
+loadable sqlite3 everywhere, instead of relying on the OS having one.)
 
 - [ ] **Step 3: Verify the scaffold is green**
 
@@ -600,14 +604,14 @@ void main() {
     );
   });
 
-  test('flagging a rest day can never raise the number', () {
-    final before = onTrackPerDay(weeklyTarget: 500, targets: targets,
-        loggedThisWeek: 180, restDayIndexes: {}, todayIndex: 3)!;
-    final after = onTrackPerDay(weeklyTarget: 500, targets: targets,
+  test('rest-day targets are written off, not redistributed', () {
+    // Thursday, 180 logged. No rest: (500-180)/4 = 80.
+    // Fri (75) flagged, WITH the write-off: (500-180-75)/3 = 81.67 -> 82.
+    // WITHOUT the write-off it would be (500-180)/3 = 107 — that jump is
+    // what the spec forbids; the ±rounding from having fewer days is not.
+    final flagged = onTrackPerDay(weeklyTarget: 500, targets: targets,
         loggedThisWeek: 180, restDayIndexes: {4}, todayIndex: 3)!;
-    expect(after <= before, isTrue, reason: 'rest flag must not inflate ($before -> $after)');
-    // Fri(75) rest: (500-180-75)/3 remaining days (Thu,Sat,Sun) = 81.67 -> 82.
-    expect(after, 82);
+    expect(flagged, 82);
   });
 
   test('already met: 0', () {
@@ -914,6 +918,11 @@ import 'package:drift/drift.dart';
 
 part 'db.g.dart';
 
+// @DataClassName is REQUIRED on Sets: drift's default row-class name would
+// be `Set`, which shadows dart:core's Set inside this library (db.g.dart is
+// a part of this file) and breaks compilation. WeekPlans gets one too so the
+// repository's `WeekPlansData` references resolve.
+@DataClassName('SetsData')
 class Sets extends Table {
   TextColumn get id => text()();
   TextColumn get date => text()(); // LocalDate.iso — the day the set counts toward
@@ -925,6 +934,7 @@ class Sets extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('WeekPlansData')
 class WeekPlans extends Table {
   TextColumn get weekStart => text()(); // Monday, LocalDate.iso
   IntColumn get weeklyTarget => integer()();
@@ -1115,6 +1125,8 @@ Expected: FAIL — `repository.dart` missing.
 `lib/data/repository.dart`:
 
 ```dart
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -1237,7 +1249,7 @@ class PushOnRepository {
           .map((rows) => rows.map((r) => r.date).toSet());
 
   Stream<Set<String>> watchTransparentDays(LocalDate from, LocalDate to) {
-    final plans = (_db.select(_db.weekPlans)
+    final zeroDays = (_db.select(_db.weekPlans)
           ..where((t) => t.weekStart.isBetweenValues(from.weekStart.iso, to.iso)))
         .watch()
         .map((rows) {
@@ -1246,18 +1258,47 @@ class PushOnRepository {
         final targets = p.targetsCsv.split(',').map(int.parse).toList();
         final start = LocalDate.parse(p.weekStart);
         for (var d = 0; d < 7; d++) {
-          if (targets[d] == 0) zero.add(start.addDays(d).iso);
+          final day = start.addDays(d);
+          if (targets[d] == 0 && !day.isBefore(from) && !day.isAfter(to)) {
+            zero.add(day.iso);
+          }
         }
       }
       return zero;
     });
-    return watchRestDays(from, to).asyncMap((rest) async {
-      final zero = await plans.first;
-      return {...rest, ...zero.where((d) {
-        final ld = LocalDate.parse(d);
-        return !ld.isBefore(from) && !ld.isAfter(to);
-      })};
-    });
+    // True combineLatest — a new week_plans row (fresh target-0 day) must
+    // propagate immediately, not wait for the next rest-flag change.
+    return _combineLatest2(watchRestDays(from, to), zeroDays, (a, b) => {...a, ...b});
+  }
+
+  /// Minimal combineLatest for two streams (avoids an rxdart dependency).
+  static Stream<T> _combineLatest2<A, B, T>(
+      Stream<A> sa, Stream<B> sb, T Function(A a, B b) combine) {
+    late StreamController<T> controller;
+    A? lastA;
+    B? lastB;
+    var hasA = false, hasB = false;
+    StreamSubscription<A>? subA;
+    StreamSubscription<B>? subB;
+    controller = StreamController<T>(
+      onListen: () {
+        subA = sa.listen((v) {
+          lastA = v;
+          hasA = true;
+          if (hasB) controller.add(combine(lastA as A, lastB as B));
+        }, onError: controller.addError);
+        subB = sb.listen((v) {
+          lastB = v;
+          hasB = true;
+          if (hasA) controller.add(combine(lastA as A, lastB as B));
+        }, onError: controller.addError);
+      },
+      onCancel: () async {
+        await subA?.cancel();
+        await subB?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   // ---- week plans ----
@@ -1780,6 +1821,10 @@ GoRouter buildRouter() => GoRouter(
           ],
         ),
         GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+        // Full-screen Monday takeover — a TOP-LEVEL route on purpose. Never
+        // push() a shell branch: branch routes are switched via goBranch,
+        // and pushing one duplicates the shell.
+        GoRoute(path: '/weekly-summary', builder: (_, __) => const SummaryScreen()),
       ],
     );
 
@@ -1814,6 +1859,12 @@ import 'state/providers.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
 
+/// Router identity MUST be stable across rebuilds: PushOnApp rebuilds on
+/// every settings write (drift stream), and a fresh GoRouter would reset
+/// navigation to '/' — silently killing pushed routes like the summary
+/// takeover. Never call buildRouter() inside build().
+final routerProvider = Provider<GoRouter>((ref) => buildRouter());
+
 class PushOnApp extends ConsumerWidget {
   const PushOnApp({super.key});
 
@@ -1833,7 +1884,7 @@ class PushOnApp extends ConsumerWidget {
         return MaterialApp.router(
           title: 'PushOn',
           theme: buildTheme(),
-          routerConfig: buildRouter(),
+          routerConfig: ref.watch(routerProvider),
         );
       },
     );
@@ -2315,8 +2366,16 @@ import 'package:pushon/domain/dates.dart';
 import 'harness.dart';
 
 void main() {
+  // Install on MONDAY of the test week: with the harness default
+  // (installDate == today, Sat Jul 11), every earlier day is preInstall and
+  // deliberately un-openable — these tests need openable past days.
+  Future<void> seedMondayInstall(repo) async {
+    await repo.patchSettings({'installDate': '2026-07-06'});
+    await repo.ensureWeekPlan(const LocalDate(2026, 7, 6));
+  }
+
   testWidgets('catch-up: open a past day, add a set, total shows in the cell', (tester) async {
-    await pumpApp(tester); // today = Sat 2026-07-11
+    await pumpApp(tester, seed: seedMondayInstall); // today = Sat 2026-07-11
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('9').first); // Thursday this week (Aug 9 also renders in the 42-cell grid)
@@ -2329,7 +2388,7 @@ void main() {
   });
 
   testWidgets('rest toggle flips the day state', (tester) async {
-    final (_, repo) = await pumpApp(tester);
+    final (_, repo) = await pumpApp(tester, seed: seedMondayInstall);
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('10')); // Friday this week
@@ -2339,6 +2398,27 @@ void main() {
     expect(await repo.watchRestDays(const LocalDate(2026, 7, 10), const LocalDate(2026, 7, 10)).first,
         {'2026-07-10'});
   });
+}
+```
+
+This task also extends the harness (`test/ui/harness.dart`) with the `seed`
+hook later tasks reuse — run **after** DB creation and **instead of** the
+default `onboarded` seeding when provided:
+
+```dart
+Future<(AppDatabase, PushOnRepository)> pumpApp(
+  WidgetTester tester, {
+  DateTime? now,
+  bool onboarded = true,
+  Future<void> Function(PushOnRepository repo)? seed,
+}) async {
+  // ... db/repo as before ...
+  if (seed != null) {
+    await seed(repo);
+  } else if (onboarded) {
+    // ... default seeding as before ...
+  }
+  // ... pumpWidget as before ...
 }
 ```
 
@@ -2631,24 +2711,7 @@ void main() {
 }
 ```
 
-This needs a `seed` hook on the harness — extend `pumpApp` with an optional `Future<void> Function(PushOnRepository)? seed` parameter, run after DB creation and **instead of** the default `onboarded` seeding when provided:
-
-```dart
-Future<(AppDatabase, PushOnRepository)> pumpApp(
-  WidgetTester tester, {
-  DateTime? now,
-  bool onboarded = true,
-  Future<void> Function(PushOnRepository repo)? seed,
-}) async {
-  // ... db/repo as before ...
-  if (seed != null) {
-    await seed(repo);
-  } else if (onboarded) {
-    // ... default seeding as before ...
-  }
-  // ... pumpWidget as before ...
-}
-```
+(The harness `seed` hook these tests use was added in Task 12.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -2687,7 +2750,7 @@ Today screen — add inside `build`, before `return Scaffold(...)`:
       if (due != null) {
         ref.read(repositoryProvider).patchSettings(
             {'lastSummaryShownWeek': ref.read(todayProvider).weekStart.iso});
-        context.push('/summary');
+        context.push('/weekly-summary'); // top-level takeover route, NOT the shell branch
       }
     });
 ```
@@ -3067,7 +3130,7 @@ git commit -m "feat: implement settings screen with rhythm validation"
 
 **Interfaces:**
 - Consumes: repository, providers, `kDayNames` (Task 14), theme.
-- Produces: `OnboardingScreen` — brand header (icon block + "PushOn" + tagline), inline `CupertinoPicker` for the weekly target (multiples of 5, 5–2000, initial 500), easy/peak day dropdowns (defaults Tue/Sat, same `!=` validation as Settings), **Start** button that: `patchSettings({weeklyTarget, easyDay, peakDay, installDate: today.iso})` then `ensureWeekPlan(today.weekStart)` — the spec's one pre-Monday plan write. The settings gate in `app.dart` (Task 10) then flips to the router automatically.
+- Produces: `OnboardingScreen` — text brand header ("PushOn" wordmark + tagline; the icon mark is deliberately not rendered here — no flutter_svg dependency in v1), inline `CupertinoPicker` for the weekly target (multiples of 5, 5–2000, initial 500), easy/peak day dropdowns (defaults Tue/Sat, same `!=` validation as Settings), **Start** button that: `patchSettings({weeklyTarget, easyDay, peakDay, installDate: today.iso})` then `ensureWeekPlan(today.weekStart)` — the spec's one pre-Monday plan write. The settings gate in `app.dart` (Task 10) then flips to the router automatically.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3315,7 +3378,9 @@ final notificationSyncProvider = Provider<void>((ref) {
 
 In `lib/app.dart`, on the `installDate != null` branch, first line: `ref.watch(notificationSyncProvider);`.
 
-Real battery exemption in `lib/ui/settings_screen.dart`:
+Real battery exemption in `lib/ui/settings_screen.dart` — **DELETE the Task 14
+placeholder function entirely** (a second top-level `requestBatteryExemption`
+is a compile error) and replace it with this, adding the import:
 
 ```dart
 import 'package:permission_handler/permission_handler.dart';
