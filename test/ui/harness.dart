@@ -13,12 +13,15 @@ Future<(AppDatabase, PushOnRepository)> pumpApp(
   WidgetTester tester, {
   DateTime? now,
   bool onboarded = true,
+  Future<void> Function(PushOnRepository repo)? seed,
 }) async {
   final clock = now ?? DateTime(2026, 7, 11, 9); // a Saturday
   final db = AppDatabase(NativeDatabase.memory());
   addTearDown(db.close);
   final repo = PushOnRepository(db);
-  if (onboarded) {
+  if (seed != null) {
+    await seed(repo);
+  } else if (onboarded) {
     await repo.patchSettings({'installDate': LocalDate.from(clock).iso});
     await repo.ensureWeekPlan(LocalDate.from(clock).weekStart);
   }

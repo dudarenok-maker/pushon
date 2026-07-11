@@ -65,4 +65,11 @@ void main() {
     final transparent = await repo.watchTransparentDays(monday, monday.addDays(6)).first;
     expect(transparent.contains(monday.addDays(zeroIdx).iso), isTrue);
   });
+
+  test('watchWeekPlans returns stored plans keyed by weekStart', () async {
+    const monday = LocalDate(2026, 7, 6);
+    await repo.ensureWeekPlan(monday);
+    final plans = await repo.watchWeekPlans(monday, monday.addDays(6)).first;
+    expect(plans.keys, ['2026-07-06']);
+  });
 }

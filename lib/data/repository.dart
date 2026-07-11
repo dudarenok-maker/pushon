@@ -197,6 +197,13 @@ class PushOnRepository {
     return row == null ? null : _planFromRow(row);
   }
 
+  /// Stored plans keyed by weekStart.iso, for weeks intersecting [from, to].
+  Stream<Map<String, WeekPlanData>> watchWeekPlans(LocalDate from, LocalDate to) =>
+      (_db.select(_db.weekPlans)
+            ..where((t) => t.weekStart.isBetweenValues(from.weekStart.iso, to.iso)))
+          .watch()
+          .map((rows) => {for (final r in rows) r.weekStart: _planFromRow(r)});
+
   Stream<WeekPlanData?> watchWeekPlan(LocalDate weekStart) =>
       (_db.select(_db.weekPlans)..where((t) => t.weekStart.equals(weekStart.iso)))
           .watchSingleOrNull()
