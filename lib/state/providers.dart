@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/db.dart';
 import '../data/notification_scheduler.dart';
 import '../data/repository.dart';
+import '../domain/achievements.dart';
 import '../domain/dates.dart';
 import '../domain/notification_planner.dart';
 import '../domain/streak.dart';
@@ -88,12 +89,47 @@ final streakProvider = StreamProvider<int>((ref) {
   final today = ref.watch(todayProvider);
   final install = ref.watch(settingsProvider).value?.installDate;
   if (install == null) return Stream.value(0);
-  final logged = repo.watchLoggedDays(install, today);
-  final transparent = repo.watchTransparentDays(install, today);
-  return logged.asyncMap((l) async => computeStreak(
+  // Combine logged + transparent so a rest/sick toggle that bridges a gap
+  // refreshes the streak immediately, not just on the next log (issue #4).
+  return repo.watchStreakInputs(install, today).map((d) => computeStreak(
         today: today,
         installDate: install,
-        loggedDays: l.map(LocalDate.parse).toSet(),
-        transparentDays: (await transparent.first).map(LocalDate.parse).toSet(),
+        loggedDays: d.logged.map(LocalDate.parse).toSet(),
+        transparentDays: d.transparent.map(LocalDate.parse).toSet(),
       ));
+});
+
+// ---- gamification (all derived; nothing stored) ----
+
+final _lifetimeTotalsProvider = StreamProvider<({int reps, int best})>(
+    (ref) => ref.watch(repositoryProvider).watchLifetimeTotals());
+
+final _longestStreakProvider = StreamProvider<int>((ref) {
+  final repo = ref.watch(repositoryProvider);
+  final today = ref.watch(todayProvider);
+  final install = ref.watch(settingsProvider).value?.installDate;
+  if (install == null) return Stream.value(0);
+  return repo.watchStreakInputs(install, today).map((d) => longestStreak(
+        today: today,
+        installDate: install,
+        loggedDays: d.logged.map(LocalDate.parse).toSet(),
+        transparentDays: d.transparent.map(LocalDate.parse).toSet(),
+      ));
+});
+
+final _perfectWeeksProvider = StreamProvider<int>((ref) {
+  final repo = ref.watch(repositoryProvider);
+  final today = ref.watch(todayProvider);
+  return repo.watchCompletedWeekResults(today.weekStart).map(countPerfectWeeks);
+});
+
+/// Lifetime tallies driving the badges, combined from the derived streams.
+final milestoneStatsProvider = Provider<MilestoneStats>((ref) {
+  final totals = ref.watch(_lifetimeTotalsProvider).value;
+  return MilestoneStats(
+    lifetimeReps: totals?.reps ?? 0,
+    bestSet: totals?.best ?? 0,
+    longestStreak: ref.watch(_longestStreakProvider).value ?? 0,
+    perfectWeeks: ref.watch(_perfectWeeksProvider).value ?? 0,
+  );
 });

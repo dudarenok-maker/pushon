@@ -10,11 +10,14 @@ void main() {
     expect(round5(0), 0);
   });
 
-  test('canonical spec fixture: W=500, easy Tue(1), peak Sat(5)', () {
+  test('canonical spec fixture: W=500, easy Tue(1), peak Sat(5), seed 0', () {
     expect(
       distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5),
-      [70, 40, 70, 75, 75, 100, 70], // Mon..Sun — MUST match the spec example
+      [70, 40, 70, 75, 75, 100, 70], // Mon..Sun — the seed-0 reference
     );
+    // seed 0 is the explicit reference: no shuffle applied.
+    expect(distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5, weekSeed: 0),
+        [70, 40, 70, 75, 75, 100, 70]);
   });
 
   test('hard invariants hold across the whole input space', () {
@@ -49,6 +52,70 @@ void main() {
   test('peak on Monday: leftover wraps without crashing', () {
     final t = distributeWeek(weeklyTarget: 500, easyDay: 2, peakDay: 0);
     expect(t.reduce((a, b) => a + b), 500);
+  });
+
+  test('hard invariants survive per-week variation across seeds', () {
+    for (final w in [30, 100, 355, 500, 505, 1000, 2000]) {
+      for (var easy = 0; easy < 7; easy++) {
+        for (var peak = 0; peak < 7; peak++) {
+          if (easy == peak) continue;
+          for (var seed = 1; seed <= 40; seed++) {
+            final t = distributeWeek(
+                weeklyTarget: w, easyDay: easy, peakDay: peak, weekSeed: seed);
+            expect(t.reduce((a, b) => a + b), w,
+                reason: 'sum W=$w e=$easy p=$peak seed=$seed');
+            for (final v in t) {
+              expect(v >= 0 && v % 5 == 0, isTrue,
+                  reason: 'value $v W=$w e=$easy p=$peak seed=$seed');
+            }
+          }
+        }
+      }
+    }
+  });
+
+  test('anchors drift within their percentage bands but stay the extremes', () {
+    const base = 70; // round5(500/7)
+    final easyLo = round5(0.4 * base), easyHi = round5(0.7 * base); // 30..50
+    final peakLo = round5(1.3 * base), peakHi = round5(1.6 * base); // 90..110
+    final easies = <int>{}, peaks = <int>{};
+    for (var seed = 1; seed <= 80; seed++) {
+      final t = distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5, weekSeed: seed);
+      expect(t[1], inInclusiveRange(easyLo, easyHi), reason: 'easy in band, seed $seed');
+      expect(t[5], inInclusiveRange(peakLo, peakHi), reason: 'peak in band, seed $seed');
+      expect(t[5], t.reduce((a, b) => a > b ? a : b), reason: 'peak is the strict max');
+      expect(t[1], t.reduce((a, b) => a < b ? a : b), reason: 'easy is the strict min');
+      easies.add(t[1]);
+      peaks.add(t[5]);
+    }
+    // Bold variation: the anchors themselves take several distinct values.
+    expect(easies.length, greaterThan(1), reason: 'easy day value moves week to week');
+    expect(peaks.length, greaterThan(1), reason: 'peak day value moves week to week');
+  });
+
+  test('consecutive weeks actually move around', () {
+    final shapes = {
+      for (var seed = 1; seed <= 40; seed++)
+        distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5, weekSeed: seed).join(',')
+    };
+    // Moderate variation should yield several distinct weekly shapes, not one.
+    expect(shapes.length, greaterThan(3));
+  });
+
+  test('same seed is deterministic', () {
+    for (final seed in [1, 7, 42, 1000, 999999]) {
+      expect(
+        distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5, weekSeed: seed),
+        distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5, weekSeed: seed),
+      );
+    }
+  });
+
+  test('tiny target squeezes the band shut: variation is a no-op', () {
+    final ref = distributeWeek(weeklyTarget: 30, easyDay: 1, peakDay: 5);
+    for (var seed = 1; seed <= 20; seed++) {
+      expect(distributeWeek(weeklyTarget: 30, easyDay: 1, peakDay: 5, weekSeed: seed), ref);
+    }
   });
 
   test('invalid input throws', () {

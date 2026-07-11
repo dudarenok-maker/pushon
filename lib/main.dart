@@ -6,6 +6,7 @@ import 'app.dart';
 import 'data/db.dart';
 import 'data/notification_scheduler.dart';
 import 'state/providers.dart';
+import 'ui/day_rollover.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,6 @@ Future<void> main() async {
       databaseProvider.overrideWithValue(db),
       schedulerProvider.overrideWithValue(scheduler),
     ],
-    child: const PushOnApp(),
+    child: const DayRolloverScope(child: PushOnApp()),
   ));
 }

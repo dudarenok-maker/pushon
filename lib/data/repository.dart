@@ -90,7 +90,11 @@ class PushOnRepository {
         ..where((t) => t.deletedAt.isNull() & t.date.isBetweenValues(from.iso, to.iso));
 
   Stream<List<SetEntry>> watchSetsForDay(LocalDate date) =>
-      (_liveSets(date, date)..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+      // rowid tiebreaker keeps same-instant sets in insertion order — createdAt
+      // alone is not unique (several sets can share a timestamp), which would
+      // otherwise leave display/best-set order at the mercy of the table scan.
+      (_liveSets(date, date)
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt), (t) => OrderingTerm.asc(t.rowId)]))
           .watch()
           .map((rows) => [
                 for (final r in rows)
@@ -109,9 +113,51 @@ class PushOnRepository {
   Stream<Set<String>> watchLoggedDays(LocalDate from, LocalDate to) =>
       watchDayTotals(from, to).map((m) => m.keys.toSet());
 
+  /// Logged and transparent (rest/target-0) day-sets in one stream, so a
+  /// consumer re-emits when *either* changes. The streak needs this: flagging
+  /// a day rest/sick to bridge a gap changes only the transparent set, and a
+  /// stream that watches logged days alone would show a stale streak until the
+  /// next log or a day rollover (issue #4).
+  Stream<({Set<String> logged, Set<String> transparent})> watchStreakInputs(
+          LocalDate from, LocalDate to) =>
+      _combineLatest2(watchLoggedDays(from, to), watchTransparentDays(from, to),
+          (l, t) => (logged: l, transparent: t));
+
   Stream<int> watchBestSet(LocalDate from, LocalDate to) =>
       _liveSets(from, to).watch().map((rows) =>
           rows.isEmpty ? 0 : rows.map((r) => r.count).reduce((a, b) => a > b ? a : b));
+
+  /// Lifetime totals over every live set — reps summed and the best single set,
+  /// for the lifetime-reps and best-set milestone badges.
+  Stream<({int reps, int best})> watchLifetimeTotals() =>
+      (_db.select(_db.sets)..where((t) => t.deletedAt.isNull())).watch().map((rows) {
+        var reps = 0, best = 0;
+        for (final r in rows) {
+          reps += r.count;
+          if (r.count > best) best = r.count;
+        }
+        return (reps: reps, best: best);
+      });
+
+  /// Completed weeks — those with a stored plan starting before
+  /// [currentWeekStart] — as (weeklyTarget, logged) pairs, for perfect-week
+  /// badges. Joins plans with per-week logged totals over all live sets.
+  Stream<List<({int target, int logged})>> watchCompletedWeekResults(LocalDate currentWeekStart) {
+    final plans = (_db.select(_db.weekPlans)
+          ..where((t) => t.weekStart.isSmallerThanValue(currentWeekStart.iso)))
+        .watch();
+    final sets = (_db.select(_db.sets)..where((t) => t.deletedAt.isNull())).watch();
+    return _combineLatest2(plans, sets, (planRows, setRows) {
+      final byWeek = <String, int>{};
+      for (final r in setRows) {
+        final ws = LocalDate.parse(r.date).weekStart.iso;
+        byWeek[ws] = (byWeek[ws] ?? 0) + r.count;
+      }
+      return [
+        for (final p in planRows) (target: p.weeklyTarget, logged: byWeek[p.weekStart] ?? 0)
+      ];
+    });
+  }
 
   // ---- day flags ----
 
@@ -185,7 +231,8 @@ class PushOnRepository {
     if (existing != null) return existing;
     final s = await getSettings();
     final targets = distributeWeek(
-        weeklyTarget: s.weeklyTarget, easyDay: s.easyDay, peakDay: s.peakDay);
+        weeklyTarget: s.weeklyTarget, easyDay: s.easyDay, peakDay: s.peakDay,
+        weekSeed: weekStart.epochDay ~/ 7);
     await _db.into(_db.weekPlans).insert(
         WeekPlansCompanion.insert(
             weekStart: weekStart.iso, weeklyTarget: s.weeklyTarget,

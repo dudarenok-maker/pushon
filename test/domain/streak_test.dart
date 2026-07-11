@@ -64,4 +64,39 @@ void main() {
       0,
     );
   });
+
+  group('longestStreak', () {
+    test('finds the best historical run, not just the current one', () {
+      // A 4-run early, broken, then a current 2-run.
+      final logged = {d(10), d(9), d(8), d(7), d(2), d(1)};
+      expect(computeStreak(today: today, installDate: install, loggedDays: logged, transparentDays: {}), 2);
+      expect(longestStreak(today: today, installDate: install, loggedDays: logged, transparentDays: {}), 4);
+    });
+
+    test('transparent days bridge runs without counting', () {
+      final logged = {d(5), d(4), d(2), d(1)}; // gap at d(3)
+      expect(longestStreak(today: today, installDate: install, loggedDays: logged, transparentDays: {d(3)}), 4);
+      expect(longestStreak(today: today, installDate: install, loggedDays: logged, transparentDays: {}), 2);
+    });
+
+    test('pending today ends the run without breaking it', () {
+      final logged = {d(2), d(1)}; // today unlogged
+      expect(longestStreak(today: today, installDate: install, loggedDays: logged, transparentDays: {}), 2);
+    });
+
+    test('logged today extends the current run into the max', () {
+      final logged = {d(2), d(1), today};
+      expect(longestStreak(today: today, installDate: install, loggedDays: logged, transparentDays: {}), 3);
+    });
+
+    test('never scans before installDate', () {
+      const installed = LocalDate(2026, 7, 9);
+      final logged = {d(3), d(2), d(1)}; // d(3) is pre-install
+      expect(longestStreak(today: today, installDate: installed, loggedDays: logged, transparentDays: {}), 2);
+    });
+
+    test('zero with no logged days', () {
+      expect(longestStreak(today: today, installDate: install, loggedDays: {}, transparentDays: {}), 0);
+    });
+  });
 }

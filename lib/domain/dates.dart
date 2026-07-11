@@ -28,6 +28,12 @@ class LocalDate implements Comparable<LocalDate> {
 
   LocalDate get weekStart => addDays(-weekdayIndex);
 
+  /// Days since the Unix epoch (1970-01-01), computed in UTC so DST offsets
+  /// can never add or drop a day. A stable, contiguous integer identity for
+  /// the day — used to seed per-week plan variation.
+  int get epochDay =>
+      DateTime.utc(year, month, day).difference(DateTime.utc(1970, 1, 1)).inDays;
+
   bool isBefore(LocalDate other) => compareTo(other) < 0;
   bool isAfter(LocalDate other) => compareTo(other) > 0;
 

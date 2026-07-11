@@ -27,6 +27,18 @@ void main() {
     expect(const LocalDate(2026, 7, 6).weekStart, const LocalDate(2026, 7, 6));
   });
 
+  test('epochDay is a contiguous, DST-safe day count', () {
+    expect(const LocalDate(1970, 1, 1).epochDay, 0);
+    expect(const LocalDate(1970, 1, 2).epochDay, 1);
+    expect(const LocalDate(2026, 7, 11).epochDay - const LocalDate(2026, 7, 4).epochDay, 7);
+    // Same week → same week index (the plan seed).
+    const sat = LocalDate(2026, 7, 11);
+    expect(sat.weekStart.epochDay ~/ 7, const LocalDate(2026, 7, 6).epochDay ~/ 7);
+    // Adjacent weeks differ by one.
+    expect(const LocalDate(2026, 7, 13).weekStart.epochDay ~/ 7 -
+        sat.weekStart.epochDay ~/ 7, 1);
+  });
+
   test('ordering', () {
     expect(const LocalDate(2026, 7, 10).isBefore(const LocalDate(2026, 7, 11)), isTrue);
     expect(const LocalDate(2026, 7, 12).isAfter(const LocalDate(2026, 7, 11)), isTrue);

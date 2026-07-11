@@ -19,6 +19,8 @@ void main() {
   tearDown(() => db.close());
 
   test('log, edit, soft-delete; totals and sets exclude deleted', () async {
+    // Same createdAt for both — the rowid tiebreaker in watchSetsForDay makes
+    // insertion order (25 then 15) deterministic, not a table-scan accident.
     await repo.logSet(date: day, count: 25, now: now);
     await repo.logSet(date: day, count: 15, now: now);
     expect((await repo.watchSetsForDay(day).first).map((s) => s.count), [25, 15]);
@@ -44,7 +46,11 @@ void main() {
   test('ensureWeekPlan writes once and never recomputes after settings change', () async {
     const monday = LocalDate(2026, 7, 6);
     final plan1 = await repo.ensureWeekPlan(monday);
-    expect(plan1.targets, [70, 40, 70, 75, 75, 100, 70]);
+    // The plan is seeded per week, so we assert the invariants rather than a
+    // fixed shape: sum, and easy(Tue)/peak(Sat) still the min/max.
+    expect(plan1.targets.reduce((a, b) => a + b), 500);
+    expect(plan1.targets[1], plan1.targets.reduce((a, b) => a < b ? a : b));
+    expect(plan1.targets[5], plan1.targets.reduce((a, b) => a > b ? a : b));
     await repo.patchSettings({'weeklyTarget': '1000'});
     final plan2 = await repo.ensureWeekPlan(monday);
     expect(plan2.targets, plan1.targets, reason: 'stored plans never mutate');
