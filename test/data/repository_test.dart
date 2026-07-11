@@ -19,6 +19,8 @@ void main() {
   tearDown(() => db.close());
 
   test('log, edit, soft-delete; totals and sets exclude deleted', () async {
+    // Same createdAt for both — the rowid tiebreaker in watchSetsForDay makes
+    // insertion order (25 then 15) deterministic, not a table-scan accident.
     await repo.logSet(date: day, count: 25, now: now);
     await repo.logSet(date: day, count: 15, now: now);
     expect((await repo.watchSetsForDay(day).first).map((s) => s.count), [25, 15]);

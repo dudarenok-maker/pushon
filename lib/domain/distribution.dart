@@ -1,4 +1,6 @@
-/// Nearest multiple of 5; ties round up (Dart's round() is half-away-from-zero).
+/// Nearest multiple of 5. Dart's `round()` breaks ties away from zero, so a
+/// non-negative half rounds up (e.g. 12.5 → 15); every call site here passes a
+/// non-negative value, so that is the only case that arises.
 int round5(num x) => 5 * (x / 5).round();
 
 /// Distributes [weeklyTarget] across the 7 days (0=Mon..6=Sun).

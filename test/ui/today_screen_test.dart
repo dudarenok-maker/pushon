@@ -31,4 +31,12 @@ void main() {
     await pumpApp(tester);
     expect(find.textContaining('to stay on track'), findsOneWidget);
   });
+
+  testWidgets('on-track line hides once the weekly target is met', (tester) async {
+    final (_, repo) = await pumpApp(tester);
+    // Log the whole 500 weekly target in one set — nothing left to catch up on.
+    await repo.logSet(date: const LocalDate(2026, 7, 11), count: 500, now: DateTime(2026, 7, 11, 8));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('to stay on track'), findsNothing);
+  });
 }

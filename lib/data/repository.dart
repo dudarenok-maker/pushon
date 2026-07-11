@@ -90,7 +90,11 @@ class PushOnRepository {
         ..where((t) => t.deletedAt.isNull() & t.date.isBetweenValues(from.iso, to.iso));
 
   Stream<List<SetEntry>> watchSetsForDay(LocalDate date) =>
-      (_liveSets(date, date)..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+      // rowid tiebreaker keeps same-instant sets in insertion order — createdAt
+      // alone is not unique (several sets can share a timestamp), which would
+      // otherwise leave display/best-set order at the mercy of the table scan.
+      (_liveSets(date, date)
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt), (t) => OrderingTerm.asc(t.rowId)]))
           .watch()
           .map((rows) => [
                 for (final r in rows)

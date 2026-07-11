@@ -14,7 +14,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [clockProvider.overrideWithValue(() => now)],
       child: DayRolloverScope(
-        child: Consumer(builder: (_, ref, __) {
+        child: Consumer(builder: (_, ref, _) {
           seen.add(ref.watch(todayProvider));
           return const SizedBox();
         }),
