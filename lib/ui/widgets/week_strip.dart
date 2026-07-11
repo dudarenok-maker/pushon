@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/day_status.dart';
 import '../../state/providers.dart';
 import '../theme.dart';
+import 'day_sheet.dart';
 
 const kDayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -31,43 +32,58 @@ class WeekStrip extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         for (var d = 0; d < 7; d++)
-          _DayChip(
-            letter: kDayLetters[d],
-            target: plan.targets[d],
-            status: dayStatus(
-              date: today.weekStart.addDays(d),
+          Builder(builder: (context) {
+            final date = today.weekStart.addDays(d);
+            final status = dayStatus(
+              date: date,
               today: today,
               installDate: install,
-              logged: totals[today.weekStart.addDays(d).iso] ?? 0,
+              logged: totals[date.iso] ?? 0,
               target: plan.targets[d],
-              rest: rest.contains(today.weekStart.addDays(d).iso),
-            ),
-          ),
+              rest: rest.contains(date.iso),
+            );
+            // Same rule as the calendar: past/today are editable, future isn't.
+            final openable = status != DayStatus.future && status != DayStatus.preInstall;
+            return _DayChip(
+              letter: kDayLetters[d],
+              target: plan.targets[d],
+              status: status,
+              onTap: openable ? () => openDaySheet(context, ref, date) : null,
+            );
+          }),
       ],
     );
   }
 }
 
 class _DayChip extends StatelessWidget {
-  const _DayChip({required this.letter, required this.target, required this.status});
+  const _DayChip({required this.letter, required this.target, required this.status, this.onTap});
   final String letter;
   final int target;
   final DayStatus status;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Column(children: [
-        Container(
-          width: 34,
-          height: 34,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: dayStatusColor(status),
-            shape: BoxShape.circle,
-            border: Border.all(color: kInk.withValues(alpha: 0.25)),
-          ),
-          child: Text(letter, style: const TextStyle(fontWeight: FontWeight.w700, color: kInk)),
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          child: Column(children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: dayStatusColor(status),
+                shape: BoxShape.circle,
+                border: Border.all(color: kInk.withValues(alpha: 0.25)),
+              ),
+              child: Text(letter, style: const TextStyle(fontWeight: FontWeight.w700, color: kInk)),
+            ),
+            const SizedBox(height: 2),
+            Text('$target', style: TextStyle(fontSize: 11, color: kInk.withValues(alpha: 0.6))),
+          ]),
         ),
-        const SizedBox(height: 2),
-        Text('$target', style: TextStyle(fontSize: 11, color: kInk.withValues(alpha: 0.6))),
-      ]);
+      );
 }

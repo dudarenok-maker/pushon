@@ -7,8 +7,8 @@ import '../domain/day_status.dart';
 import '../domain/distribution.dart';
 import '../state/providers.dart';
 import 'theme.dart';
+import 'widgets/day_sheet.dart';
 import 'widgets/week_strip.dart' show dayStatusColor;
-import 'widgets/wheel_log_sheet.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -89,7 +89,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Opacity(
       opacity: inMonth ? 1 : 0.35,
       child: InkWell(
-        onTap: openable ? () => _openDay(d) : null,
+        onTap: openable ? () => openDaySheet(context, ref, d) : null,
         child: Container(
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
@@ -106,16 +106,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
     );
   }
-
-  Future<void> _openDay(LocalDate date) async {
-    final repo = ref.read(repositoryProvider);
-    await repo.ensureWeekPlan(date.weekStart); // touch semantics
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (_) => _DaySheet(date: date),
-    );
-  }
 }
 
 // Range-keyed providers used only by the calendar.
@@ -126,47 +116,3 @@ final rangeRestProvider = StreamProvider.family<Set<String>, (LocalDate, LocalDa
 final rangePlansProvider =
     StreamProvider.family<Map<String, WeekPlanData>, (LocalDate, LocalDate)>(
         (ref, r) => ref.watch(repositoryProvider).watchWeekPlans(r.$1, r.$2));
-
-class _DaySheet extends ConsumerWidget {
-  const _DaySheet({required this.date});
-  final LocalDate date;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sets = ref.watch(daySetsProvider(date)).value ?? const [];
-    final rest = ref.watch(rangeRestProvider((date, date))).value ?? const {};
-    final repo = ref.read(repositoryProvider);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(date.iso, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kInk)),
-          SwitchListTile(
-            title: const Text('Rest / sick day'),
-            value: rest.contains(date.iso),
-            onChanged: (v) => repo.setRest(date, v),
-          ),
-          for (final s in sets)
-            ListTile(
-              key: ValueKey(s.id),
-              dense: true,
-              title: Text('${s.count} reps'),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => repo.deleteSet(id: s.id, now: ref.read(clockProvider)()),
-              ),
-            ),
-          FilledButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('Add set'),
-            onPressed: () async {
-              final count = await showWheelPicker(context, title: 'How many?');
-              if (count == null) return;
-              await repo.logSet(date: date, count: count, now: ref.read(clockProvider)());
-            },
-          ),
-        ]),
-      ),
-    );
-  }
-}
