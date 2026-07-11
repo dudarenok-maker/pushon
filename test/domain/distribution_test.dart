@@ -74,15 +74,23 @@ void main() {
     }
   });
 
-  test('variation never disturbs the anchors or the soft goals (comfortable W)', () {
-    final ref = distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5);
-    for (var seed = 1; seed <= 60; seed++) {
+  test('anchors drift within their percentage bands but stay the extremes', () {
+    const base = 70; // round5(500/7)
+    final easyLo = round5(0.4 * base), easyHi = round5(0.7 * base); // 30..50
+    final peakLo = round5(1.3 * base), peakHi = round5(1.6 * base); // 90..110
+    final easies = <int>{}, peaks = <int>{};
+    for (var seed = 1; seed <= 80; seed++) {
       final t = distributeWeek(weeklyTarget: 500, easyDay: 1, peakDay: 5, weekSeed: seed);
-      expect(t[1], ref[1], reason: 'easy day value is fixed');
-      expect(t[5], ref[5], reason: 'peak day value is fixed');
-      expect(t[5], t.reduce((a, b) => a > b ? a : b), reason: 'peak stays the max');
-      expect(t[1], t.reduce((a, b) => a < b ? a : b), reason: 'easy stays the min');
+      expect(t[1], inInclusiveRange(easyLo, easyHi), reason: 'easy in band, seed $seed');
+      expect(t[5], inInclusiveRange(peakLo, peakHi), reason: 'peak in band, seed $seed');
+      expect(t[5], t.reduce((a, b) => a > b ? a : b), reason: 'peak is the strict max');
+      expect(t[1], t.reduce((a, b) => a < b ? a : b), reason: 'easy is the strict min');
+      easies.add(t[1]);
+      peaks.add(t[5]);
     }
+    // Bold variation: the anchors themselves take several distinct values.
+    expect(easies.length, greaterThan(1), reason: 'easy day value moves week to week');
+    expect(peaks.length, greaterThan(1), reason: 'peak day value moves week to week');
   });
 
   test('consecutive weeks actually move around', () {

@@ -50,26 +50,28 @@ Given weekly target `W` (multiple of 5), easy day `E`, peak day `P`
    exactly to `W`. Soft goals (hold whenever `W` permits): peak is the
    largest day, easy the smallest.
 7. **Per-week variation.** So consecutive weeks don't look identical, the
-   five normal days are shuffled by a per-week seed (`weekStart` epoch-week
-   index): a walk of sum-preserving ±5 transfers between two normal days,
-   each accepted only if both stay inside a moderate band
-   `[max(easy+5, base−15, 0) … min(peak−5, base+15)]`. Because every transfer
-   conserves the sum and the band sits strictly between the anchors, the hard
-   invariant and both soft goals are preserved for *any* seed; the easy and
-   peak day values themselves never move. The band is deliberately narrow of
-   the anchors (`easy+5 … peak−5`), so the easy day stays uniquely smallest
-   and the peak day uniquely largest. Degenerate targets that squeeze the band
-   shut (tiny `W`) fall back to the reference split untouched. The variation is
-   **deterministic in the seed**, so the calendar's preview of a future week
-   matches the plan eventually stored for it. `seed == 0` is the unshuffled
-   reference.
+   whole week's shape is varied by a per-week seed (`weekStart` epoch-week
+   index). Each day gets a band: the easy day across `[40%, 70%]` of `base`,
+   the peak across `[130%, 160%]`, and the five normal days the strict gap
+   between them (`round5(0.7·base)+5 … round5(1.3·base)−5`). The reference plan
+   is then redistributed by a walk of sum-preserving ±5 transfers between *any*
+   two days, each applied only if both ends stay inside their own band. Because
+   every transfer conserves the sum and the normal band sits strictly between
+   the anchor bands, the hard invariant and both soft goals hold for *any*
+   seed — while the easy and peak values themselves also drift (the "bold"
+   spread). Targets too small to honour the bands (the bands would meet) fall
+   back to the reference split untouched. The variation is **deterministic in
+   the seed**, so the calendar's preview of a future week matches the plan
+   eventually stored for it. `seed == 0` is the unvaried reference.
 
 Worked example (the `seed == 0` **reference**), `W=500`, easy Tue, peak Sat —
 *the canonical unit-test fixture*:
 `Mon 70 · Tue 40 · Wed 70 · Thu 75 · Fri 75 · Sat 100 · Sun 70`
 (base 70, easy 40, peak 100, five days at 70, +5 to Fri and Thu). Real weeks
-carry a non-zero seed, so their five normal days land elsewhere in the band —
-e.g. `Mon 80 · Wed 65 · Thu 75 · Fri 70 · Sun 70` — with Tue/Sat unchanged.
+carry a non-zero seed, so the whole shape lands elsewhere within the bands —
+e.g. `Mon 65 · Tue 40 · Wed 80 · Thu 75 · Fri 65 · Sat 110 · Sun 65` and
+`Mon 85 · Tue 30 · Wed 55 · Thu 80 · Fri 75 · Sat 100 · Sun 75` — Tue still
+smallest, Sat still largest, each summing to 500.
 
 Rules around it:
 
