@@ -9,6 +9,6 @@ void main() {
 
   testWidgets('boots to onboarding on first run', (tester) async {
     await pumpApp(tester, onboarded: false);
-    expect(find.textContaining('Onboarding'), findsOneWidget);
+    expect(find.text('The push-up habit that sticks.'), findsOneWidget);
   });
 }
