@@ -85,7 +85,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ? DayStatus.future
         : dayStatus(date: d, today: today, installDate: install,
             logged: logged, target: target, rest: rest.contains(d.iso));
-    final openable = status != DayStatus.future && status != DayStatus.preInstall;
+    final openable = install != null &&
+        isDayEditable(date: d, today: today, installDate: install);
+    // Weeks before the install week aren't part of your plan — show no target.
+    final priorWeek = install != null && d.isBefore(install.weekStart);
     return Opacity(
       opacity: inMonth ? 1 : 0.35,
       child: InkWell(
@@ -99,7 +102,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text('${d.day}', style: const TextStyle(fontWeight: FontWeight.w700, color: kInk)),
-            Text(status == DayStatus.future ? '$target' : '$logged/$target',
+            Text(priorWeek ? '' : (status == DayStatus.future ? '$target' : '$logged/$target'),
                 style: TextStyle(fontSize: 10, color: kInk.withValues(alpha: 0.6))),
           ]),
         ),

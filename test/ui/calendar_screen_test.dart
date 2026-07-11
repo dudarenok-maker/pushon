@@ -25,6 +25,16 @@ void main() {
     expect(find.textContaining('20'), findsWidgets);
   });
 
+  testWidgets('weeks before the install week show no target', (tester) async {
+    await pumpApp(tester, seed: seedMondayInstall); // install Mon 2026-07-06
+    await tester.tap(find.text('Calendar'));
+    await tester.pumpAndSettle();
+    // July grid opens on the row Jun 29–Jul 5 — the whole week before the
+    // install week — and each of those 7 cells renders a blank target line.
+    final blanks = tester.widgetList<Text>(find.byType(Text)).where((t) => t.data == '').length;
+    expect(blanks, greaterThanOrEqualTo(7));
+  });
+
   testWidgets('rest toggle flips the day state', (tester) async {
     final (_, repo) = await pumpApp(tester, seed: seedMondayInstall);
     await tester.tap(find.text('Calendar'));

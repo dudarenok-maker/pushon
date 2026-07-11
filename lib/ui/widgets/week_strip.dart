@@ -42,8 +42,9 @@ class WeekStrip extends ConsumerWidget {
               target: plan.targets[d],
               rest: rest.contains(date.iso),
             );
-            // Same rule as the calendar: past/today are editable, future isn't.
-            final openable = status != DayStatus.future && status != DayStatus.preInstall;
+            // Editable from the install week onward (so you can back-fill the
+            // week you joined), never the future — shared with the calendar.
+            final openable = isDayEditable(date: date, today: today, installDate: install);
             return _DayChip(
               letter: kDayLetters[d],
               target: plan.targets[d],

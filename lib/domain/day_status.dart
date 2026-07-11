@@ -20,3 +20,15 @@ DayStatus dayStatus({
   if (logged > 0) return DayStatus.partial;
   return DayStatus.missed;
 }
+
+/// Whether a day can be opened for logging/editing from the week strip or the
+/// calendar. Editable = from the install *week* onward and not in the future.
+/// This lets you back-fill the week you joined (days earlier that week are
+/// pre-install but still editable) while earlier weeks stay locked — keeping
+/// the install date a hard boundary for the streak and summaries.
+bool isDayEditable({
+  required LocalDate date,
+  required LocalDate today,
+  required LocalDate installDate,
+}) =>
+    !date.isAfter(today) && !date.isBefore(installDate.weekStart);
