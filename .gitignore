@@ -1,0 +1,18 @@
+# Brainstorming / working artifacts
+.superpowers/
+
+# Flutter/Dart (pre-seeded for when the app scaffold lands)
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Signing secrets — never commit
+key.properties
+*.jks
+*.keystore
+
+# IDE
+.idea/
+.vscode/
+*.iml
