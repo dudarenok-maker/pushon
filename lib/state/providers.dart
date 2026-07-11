@@ -39,6 +39,16 @@ final weekRestDaysProvider = StreamProvider<Set<String>>((ref) {
 final daySetsProvider = StreamProvider.family<List<SetEntry>, LocalDate>(
     (ref, date) => ref.watch(repositoryProvider).watchSetsForDay(date));
 
+final summaryDueProvider = FutureProvider<LocalDate?>((ref) async {
+  final s = await ref.watch(settingsProvider.future);
+  final today = ref.watch(todayProvider);
+  final currentWeek = today.weekStart;
+  final install = s.installDate;
+  if (install == null || !install.isBefore(currentWeek)) return null; // no completed week yet
+  if (s.lastSummaryShownWeek != null && !s.lastSummaryShownWeek!.isBefore(currentWeek)) return null;
+  return currentWeek.addDays(-7); // most recent completed week only — never queue
+});
+
 final streakProvider = StreamProvider<int>((ref) {
   final repo = ref.watch(repositoryProvider);
   final today = ref.watch(todayProvider);

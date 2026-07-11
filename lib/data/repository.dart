@@ -109,6 +109,10 @@ class PushOnRepository {
   Stream<Set<String>> watchLoggedDays(LocalDate from, LocalDate to) =>
       watchDayTotals(from, to).map((m) => m.keys.toSet());
 
+  Stream<int> watchBestSet(LocalDate from, LocalDate to) =>
+      _liveSets(from, to).watch().map((rows) =>
+          rows.isEmpty ? 0 : rows.map((r) => r.count).reduce((a, b) => a > b ? a : b));
+
   // ---- day flags ----
 
   Future<void> setRest(LocalDate date, bool rest) => _db

@@ -72,4 +72,12 @@ void main() {
     final plans = await repo.watchWeekPlans(monday, monday.addDays(6)).first;
     expect(plans.keys, ['2026-07-06']);
   });
+
+  test('watchBestSet returns the max count, 0 when empty', () async {
+    expect(await repo.watchBestSet(day, day).first, 0);
+    await repo.logSet(date: day, count: 25, now: now);
+    await repo.logSet(date: day, count: 40, now: now);
+    await repo.deleteSet(id: 'id-1', now: now); // the 40
+    expect(await repo.watchBestSet(day, day).first, 25);
+  });
 }

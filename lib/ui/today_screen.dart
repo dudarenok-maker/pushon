@@ -44,6 +44,15 @@ class TodayScreen extends ConsumerWidget {
       await ref.read(repositoryProvider).logSet(date: today, count: count, now: now);
     }
 
+    ref.listen(summaryDueProvider, (prev, next) {
+      final due = next.value;
+      if (due != null) {
+        ref.read(repositoryProvider).patchSettings(
+            {'lastSummaryShownWeek': ref.read(todayProvider).weekStart.iso});
+        context.push('/weekly-summary'); // top-level takeover route, NOT the shell branch
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('PushOn'),
