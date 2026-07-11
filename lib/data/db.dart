@@ -45,7 +45,17 @@ class SettingsKv extends Table {
 
 @DriftDatabase(tables: [Sets, WeekPlans, DayFlags, SettingsKv])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase(super.e);
+  // closeStreamsSynchronously avoids drift's one-tick close debounce for
+  // query streams, which otherwise leaves a pending Timer past the end of a
+  // widget test (flutter_test tears down the tree and asserts no pending
+  // timers in the same synchronous step) — see drift's own
+  // StreamQueryStore.markAsClosed doc comment. Harmless in production: it
+  // just means an unwatched query stream is evicted from the cache
+  // immediately instead of after one event-loop tick.
+  AppDatabase(QueryExecutor e)
+      : super(e is DatabaseConnection
+            ? e
+            : DatabaseConnection(e, closeStreamsSynchronously: true));
 
   @override
   int get schemaVersion => 1;
