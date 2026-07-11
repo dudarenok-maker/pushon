@@ -16,9 +16,11 @@ void main() {
     // The Today-screen takeover listener pushes /weekly-summary once its
     // summaryDueProvider resolves, and the summary screen then loads its
     // drift-backed summaryDataProvider. Both run on the real event loop, so we
-    // settle via real-loop rounds until the week total renders — see
-    // harness.settleUntil.
-    await settleUntil(tester, find.textContaining('550'));
+    // settle via real-loop rounds until the summary content renders. We wait on
+    // 'Best set trend' (only in the loaded summary) rather than the week total:
+    // the badges section can print the same number (e.g. lifetime-reps
+    // progress) in the placeholder shown *while* summaryDataProvider loads.
+    await settleUntil(tester, find.text('Best set trend'));
     expect(find.textContaining('550'), findsWidgets);       // week total
     expect(find.textContaining('Best set: 300'), findsOneWidget);
     expect(find.text('Best set trend'), findsOneWidget);

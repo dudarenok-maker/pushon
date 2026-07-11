@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../domain/achievements.dart';
 import '../domain/on_track.dart';
 import '../state/providers.dart';
 import 'settings_screen.dart' show requestBatteryExemption;
 import 'theme.dart';
+import 'widgets/celebration.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/week_strip.dart';
 import 'widgets/wheel_log_sheet.dart';
@@ -41,8 +43,19 @@ class TodayScreen extends ConsumerWidget {
       final last = sets.isEmpty ? 20 : sets.last.count;
       final count = await showWheelPicker(context, title: 'How many?', initial: last);
       if (count == null) return;
+      final priorBest = ref.read(milestoneStatsProvider).bestSet; // before this set lands
       final now = ref.read(clockProvider)();
       await ref.read(repositoryProvider).logSet(date: today, count: count, now: now);
+      if (context.mounted) {
+        showCelebration(context, celebrationFor(
+          setCount: count,
+          priorBestEver: priorBest,
+          dayBefore: logged,
+          dayTarget: target,
+          weekBefore: weekLogged,
+          weeklyTarget: plan?.weeklyTarget ?? 0,
+        ));
+      }
       final settings = ref.read(settingsProvider).value;
       if (settings != null && !settings.batteryPromptShown && context.mounted) {
         await requestBatteryExemption(context);

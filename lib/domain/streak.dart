@@ -24,3 +24,29 @@ int computeStreak({
   }
   return streak;
 }
+
+/// The longest streak ever achieved — same skip/break rules as [computeStreak]
+/// but scanning the whole [installDate]..[today] span forward. An unlogged
+/// *today* is pending: it ends the current run without breaking history.
+/// Derived from inputs, so back-filling a forgotten day can raise it.
+int longestStreak({
+  required LocalDate today,
+  required LocalDate installDate,
+  required Set<LocalDate> loggedDays,
+  required Set<LocalDate> transparentDays,
+}) {
+  var best = 0, run = 0;
+  for (var day = installDate; !day.isAfter(today); day = day.addDays(1)) {
+    if (loggedDays.contains(day)) {
+      run++;
+      if (run > best) best = run;
+    } else if (transparentDays.contains(day)) {
+      continue; // bridge — neither counts nor breaks
+    } else if (day == today) {
+      break; // pending today ends the run without breaking it
+    } else {
+      run = 0;
+    }
+  }
+  return best;
+}

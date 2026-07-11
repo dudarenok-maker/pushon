@@ -5,6 +5,7 @@ import '../data/repository.dart';
 import '../domain/suggestion.dart';
 import '../state/providers.dart';
 import 'theme.dart';
+import 'widgets/badges_section.dart';
 
 /// (plan, logged-per-day, best, best-set trend) for the most recent completed
 /// week, plus the 3-week WeekResult history for the suggestion rule.
@@ -56,7 +57,13 @@ class SummaryScreen extends ConsumerWidget {
     if (data == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Summary')),
-        body: const Center(child: Text('Your first summary arrives on Monday.')),
+        body: ListView(padding: const EdgeInsets.all(16), children: const [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Text('Your first summary arrives on Monday.', textAlign: TextAlign.center),
+          ),
+          BadgesSection(),
+        ]),
       );
     }
     final total = data.logged.fold(0, (a, b) => a + b);
@@ -141,6 +148,8 @@ class SummaryScreen extends ConsumerWidget {
               ]),
             ),
           ),
+        const Divider(height: 32),
+        const BadgesSection(),
       ]),
     );
   }

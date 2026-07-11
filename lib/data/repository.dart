@@ -127,6 +127,38 @@ class PushOnRepository {
       _liveSets(from, to).watch().map((rows) =>
           rows.isEmpty ? 0 : rows.map((r) => r.count).reduce((a, b) => a > b ? a : b));
 
+  /// Lifetime totals over every live set — reps summed and the best single set,
+  /// for the lifetime-reps and best-set milestone badges.
+  Stream<({int reps, int best})> watchLifetimeTotals() =>
+      (_db.select(_db.sets)..where((t) => t.deletedAt.isNull())).watch().map((rows) {
+        var reps = 0, best = 0;
+        for (final r in rows) {
+          reps += r.count;
+          if (r.count > best) best = r.count;
+        }
+        return (reps: reps, best: best);
+      });
+
+  /// Completed weeks — those with a stored plan starting before
+  /// [currentWeekStart] — as (weeklyTarget, logged) pairs, for perfect-week
+  /// badges. Joins plans with per-week logged totals over all live sets.
+  Stream<List<({int target, int logged})>> watchCompletedWeekResults(LocalDate currentWeekStart) {
+    final plans = (_db.select(_db.weekPlans)
+          ..where((t) => t.weekStart.isSmallerThanValue(currentWeekStart.iso)))
+        .watch();
+    final sets = (_db.select(_db.sets)..where((t) => t.deletedAt.isNull())).watch();
+    return _combineLatest2(plans, sets, (planRows, setRows) {
+      final byWeek = <String, int>{};
+      for (final r in setRows) {
+        final ws = LocalDate.parse(r.date).weekStart.iso;
+        byWeek[ws] = (byWeek[ws] ?? 0) + r.count;
+      }
+      return [
+        for (final p in planRows) (target: p.weeklyTarget, logged: byWeek[p.weekStart] ?? 0)
+      ];
+    });
+  }
+
   // ---- day flags ----
 
   Future<void> setRest(LocalDate date, bool rest) => _db
