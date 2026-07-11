@@ -57,8 +57,12 @@ Future<void> settle(WidgetTester tester, {int rounds = 60}) async {
   for (var i = 0; i < rounds; i++) {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 5)));
     await tester.pump();
+    // `find.byType(ProgressIndicator)` would never match: ProgressIndicator is
+    // abstract, so no widget's runtimeType equals it. Match the concrete
+    // subtypes (Circular/Linear) via an is-check so a visible spinner actually
+    // keeps `settle` looping.
     if (!tester.binding.hasScheduledFrame &&
-        find.byType(ProgressIndicator).evaluate().isEmpty) {
+        find.byWidgetPredicate((w) => w is ProgressIndicator).evaluate().isEmpty) {
       return;
     }
   }
