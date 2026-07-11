@@ -13,7 +13,10 @@ source of truth for scope and behaviour — read it before changing either.
 
 - **Weekly plan**: daily targets are multiples of 5 (≥0) and sum exactly to
   the weekly target. Easy day and peak day exist every week (defaults:
-  Tuesday easy, Saturday peak). Weeks start Monday.
+  Tuesday easy, Saturday peak). Weeks start Monday. The five normal days vary
+  week to week (seeded by the week), but the easy day stays the smallest and
+  the peak day the largest — variation never touches the anchors or the sum,
+  and is deterministic per week so calendar previews match stored plans.
 - **Plans are stored, never recomputed**: `week_plans` rows are written when
   a week begins and never mutate; settings changes take effect next Monday.
 - **Daily targets never change mid-week.** Catch-up math ("to stay on track:
