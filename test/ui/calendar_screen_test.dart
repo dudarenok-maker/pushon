@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pushon/domain/dates.dart';
 import 'harness.dart';
@@ -30,18 +31,21 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('10')); // Friday this week
     await tester.pumpAndSettle();
+
+    // Tap the "Rest / sick day" switch, then settle on the real event loop so
+    // the drift write propagates back through the range providers and the
+    // switch rebuilds to its on state. pumpAndSettle can't advance drift's
+    // real-async stream emissions here — see harness.settle.
     await tester.tap(find.text('Rest / sick day'));
-    await tester.pumpAndSettle();
-    expect(await repo.watchRestDays(const LocalDate(2026, 7, 10), const LocalDate(2026, 7, 10)).first,
-        {'2026-07-10'});
+    await settle(tester);
+
+    // The UI toggle reflects the new state...
+    expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value, isTrue);
+    // ...and the write reached the database.
+    final rest = await readStream(
+        tester, repo.watchRestDays(const LocalDate(2026, 7, 10), const LocalDate(2026, 7, 10)));
+    expect(rest, {'2026-07-10'});
     // Rest-toggle behaviour is also covered at the data layer by
     // test/data/repository_test.dart (setRest / watchRestDays round-trip).
-  },
-      // Quarantined: this test hangs (drift + riverpod + flutter_test teardown
-      // deadlock under closeStreamsSynchronously, only after a CupertinoPicker
-      // test). Not a production bug — the app never closes the DB under a live
-      // widget tree. Rest-toggle behaviour is covered at the data layer by
-      // test/data/repository_test.dart. Re-enable per:
-      // https://github.com/dudarenok-maker/pushon/issues/2
-      skip: true);
+  });
 }

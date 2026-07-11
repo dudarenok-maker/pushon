@@ -16,3 +16,9 @@ key.properties
 .idea/
 .vscode/
 *.iml
+
+# Claude Code local state and agent worktrees
+.claude/
+
+# Flutter crash logs
+flutter_*.log
