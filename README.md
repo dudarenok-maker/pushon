@@ -1,5 +1,7 @@
 # PushOn
 
+**The push-up habit that sticks.**
+
 A free, open-source push-up logging app that keeps you going year-round.
 
 Set a weekly target, let PushOn spread it across the week (easy days, a peak
