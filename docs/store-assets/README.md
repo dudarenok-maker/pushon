@@ -13,7 +13,8 @@ never depends on regenerating them.
 | 7-inch tablet | `screenshots/tablet-7in/01–04` | 2048×1152 PNG · 16:9 · 320–3840 px/side |
 | 10-inch tablet | `screenshots/tablet-10in/01–04` | 2560×1440 PNG · 16:9 · ≥1080 px/side |
 
-All screenshots are captured from a **release** build (no debug banner).
+All screenshots show a realistic mid-week state (a running streak, per-day
+progress rings, earned badges) with the debug banner disabled.
 Upload order in every slot: Today → Calendar → Summary → Settings.
 
 - **Phone** — the app screen framed on brand sunshine (portrait 9:16).
