@@ -7,12 +7,15 @@ never depends on regenerating them.
 
 | Asset | File | Spec |
 | --- | --- | --- |
+| App icon | `app-icon-512.png` | 512×512 PNG (≤1 MB) |
 | Feature graphic | `feature-graphic.png` | 1024×500 PNG |
-| Phone screenshots | `screenshots/01-today.png` … `04-settings.png` | 1764×3136 PNG (9:16, under Play's 2:1 cap) |
+| Phone screenshots | `screenshots/01-today.png` … `04-settings.png` | 1764×3136 PNG (9:16, 320–3840 px/side) |
 
 Screenshots are captured from a **release** build (no debug banner) and framed
 on the brand sunshine. Upload order: Today → Calendar → Summary → Settings.
-The app icon comes from `assets/brand/icon-1024.png` (use 512×512 for Play).
+Play needs **2–8** screenshots, and **at least 4** to be eligible for Play
+Store promotions — the four here meet that minimum. The app icon is derived
+from `assets/brand/icon-1024.png`.
 
 ## Listing copy
 
