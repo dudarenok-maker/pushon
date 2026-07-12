@@ -9,9 +9,12 @@ reflect that.
 1. **Upload keystore** — generate it locally (never commit it; `*.jks` and
    `key.properties` are git-ignored):
    ```
-   keytool -genkey -v -keystore android/upload-keystore.jks -storetype JKS \
+   keytool -genkey -v -keystore android/upload-keystore.jks -storetype PKCS12 \
      -keyalg RSA -keysize 2048 -validity 10000 -alias upload
    ```
+   (PKCS12 is the industry-standard format and keytool's default — it avoids
+   the "JKS is a proprietary format" migration warning. The `.jks` filename is
+   fine; Gradle reads the format from the file, not the extension.)
    Then copy `android/key.properties.example` to `android/key.properties` and
    fill in the passwords / alias / `storeFile=../upload-keystore.jks`.
 2. **Create the app** in the Play Console: name **PushOn**, free, not an ad
