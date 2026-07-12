@@ -8,6 +8,7 @@ import '../state/providers.dart';
 import 'settings_screen.dart' show requestBatteryExemption;
 import 'theme.dart';
 import 'widgets/celebration.dart';
+import 'widgets/max_width.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/week_strip.dart';
 import 'widgets/wheel_log_sheet.dart';
@@ -29,6 +30,8 @@ class TodayScreen extends ConsumerWidget {
     final logged = totals[today.iso] ?? 0;
     final best = sets.isEmpty ? 0 : sets.map((s) => s.count).reduce((a, b) => a > b ? a : b);
     final weekLogged = totals.values.fold(0, (a, b) => a + b);
+    // Watched (not read) so its drift stream is populated before the user taps.
+    final defaultReps = ref.watch(defaultRepsProvider);
     final restIdx = <int>{
       for (var d = 0; d < 7; d++)
         if (restDays.contains(today.weekStart.addDays(d).iso)) d
@@ -40,8 +43,7 @@ class TodayScreen extends ConsumerWidget {
             loggedThisWeek: weekLogged, restDayIndexes: restIdx, todayIndex: todayIdx);
 
     Future<void> log() async {
-      final last = sets.isEmpty ? 20 : sets.last.count;
-      final count = await showWheelPicker(context, title: 'How many?', initial: last);
+      final count = await showWheelPicker(context, title: 'How many?', initial: defaultReps);
       if (count == null) return;
       final priorBest = ref.read(milestoneStatsProvider).bestSet; // before this set lands
       final now = ref.read(clockProvider)();
@@ -79,7 +81,8 @@ class TodayScreen extends ConsumerWidget {
           IconButton(icon: const Icon(Icons.settings), onPressed: () => context.push('/settings')),
         ],
       ),
-      body: ListView(
+      body: MaxWidthBody(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const WeekStrip(),
@@ -144,6 +147,7 @@ class TodayScreen extends ConsumerWidget {
               },
             ),
         ],
+      ),
       ),
     );
   }

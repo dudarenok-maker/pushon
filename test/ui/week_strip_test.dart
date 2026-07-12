@@ -1,8 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pushon/domain/dates.dart';
+import 'package:pushon/domain/distribution.dart';
 import 'harness.dart';
 
 void main() {
+  testWidgets('the week strip shows logged/target progress per day', (tester) async {
+    // Saturday's (today's) seeded target.
+    final peak = distributeWeek(
+        weeklyTarget: 500, easyDay: 1, peakDay: 5,
+        weekSeed: const LocalDate(2026, 7, 6).epochDay ~/ 7)[5];
+    await pumpApp(tester, seed: (repo) async {
+      await repo.patchSettings({'installDate': '2026-07-06'});
+      await repo.ensureWeekPlan(const LocalDate(2026, 7, 6));
+      await repo.logSet(date: const LocalDate(2026, 7, 11), count: 30, now: DateTime(2026, 7, 11, 8));
+    });
+    // The strip surfaces the day's progress, not just the goal.
+    expect(find.text('30/$peak'), findsOneWidget);
+  });
+
   // Install on MONDAY so earlier weekdays this week are openable (not preInstall);
   // the harness default installs today (Sat), which would gate them off.
   Future<void> seedMondayInstall(repo) async {

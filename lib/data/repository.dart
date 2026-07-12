@@ -123,6 +123,16 @@ class PushOnRepository {
       _combineLatest2(watchLoggedDays(from, to), watchTransparentDays(from, to),
           (l, t) => (logged: l, transparent: t));
 
+  /// The counts of the most recent [limit] live sets, newest first — feeds the
+  /// logger's "standard reps" default.
+  Stream<List<int>> watchRecentSetCounts({int limit = 10}) =>
+      (_db.select(_db.sets)
+            ..where((t) => t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.desc(t.createdAt), (t) => OrderingTerm.desc(t.rowId)])
+            ..limit(limit))
+          .watch()
+          .map((rows) => [for (final r in rows) r.count]);
+
   Stream<int> watchBestSet(LocalDate from, LocalDate to) =>
       _liveSets(from, to).watch().map((rows) =>
           rows.isEmpty ? 0 : rows.map((r) => r.count).reduce((a, b) => a > b ? a : b));

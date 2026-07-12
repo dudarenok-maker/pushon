@@ -6,6 +6,7 @@ import '../domain/dates.dart';
 import '../state/providers.dart';
 import 'settings_screen.dart' show kDayNames;
 import 'theme.dart';
+import 'widgets/max_width.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -23,7 +24,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: kSunshine,
         body: SafeArea(
-          child: Padding(
+          child: MaxWidthBody(
+            child: Padding(
             padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
               child: Column(children: [
@@ -49,24 +51,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [for (final v in _targets) Center(child: Text('$v'))],
                   ),
                 ),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                  DropdownButton<int>(
-                    value: _easy,
-                    items: [for (var d = 0; d < 7; d++)
-                      DropdownMenuItem(value: d, child: Text('Easy: ${kDayNames[d]}'))],
-                    onChanged: (d) {
-                      if (d == null || d == _peak) return;
-                      setState(() => _easy = d);
-                    },
+                Row(children: [
+                  Expanded(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _easy,
+                      items: [for (var d = 0; d < 7; d++)
+                        DropdownMenuItem(value: d, child: Text('Easy: ${kDayNames[d]}'))],
+                      onChanged: (d) {
+                        if (d == null || d == _peak) return;
+                        setState(() => _easy = d);
+                      },
+                    ),
                   ),
-                  DropdownButton<int>(
-                    value: _peak,
-                    items: [for (var d = 0; d < 7; d++)
-                      DropdownMenuItem(value: d, child: Text('Peak: ${kDayNames[d]}'))],
-                    onChanged: (d) {
-                      if (d == null || d == _easy) return;
-                      setState(() => _peak = d);
-                    },
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _peak,
+                      items: [for (var d = 0; d < 7; d++)
+                        DropdownMenuItem(value: d, child: Text('Peak: ${kDayNames[d]}'))],
+                      onChanged: (d) {
+                        if (d == null || d == _easy) return;
+                        setState(() => _peak = d);
+                      },
+                    ),
                   ),
                 ]),
                 const SizedBox(height: 24),
@@ -92,6 +101,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const SizedBox(height: 16),
               ]),
             ),
+          ),
           ),
         ),
       );

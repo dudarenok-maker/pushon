@@ -6,6 +6,7 @@ import '../data/repository.dart';
 import '../domain/achievements.dart';
 import '../domain/dates.dart';
 import '../domain/notification_planner.dart';
+import '../domain/rep_default.dart';
 import '../domain/streak.dart';
 
 final databaseProvider =
@@ -40,6 +41,13 @@ final weekRestDaysProvider = StreamProvider<Set<String>>((ref) {
 
 final daySetsProvider = StreamProvider.family<List<SetEntry>, LocalDate>(
     (ref, date) => ref.watch(repositoryProvider).watchSetsForDay(date));
+
+final _recentSetCountsProvider = StreamProvider<List<int>>(
+    (ref) => ref.watch(repositoryProvider).watchRecentSetCounts());
+
+/// The rep count the logger's wheel opens on — your recent "standard" set.
+final defaultRepsProvider = Provider<int>(
+    (ref) => suggestedReps(ref.watch(_recentSetCountsProvider).value ?? const []));
 
 final summaryDueProvider = FutureProvider<LocalDate?>((ref) async {
   final s = await ref.watch(settingsProvider.future);
