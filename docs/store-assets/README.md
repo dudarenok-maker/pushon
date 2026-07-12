@@ -53,13 +53,15 @@ Set one weekly target. PushOn spreads it across the week into daily goals, with 
 
 What you get
 • Weekly target, smartly distributed — daily goals that vary week to week and always add up to your goal.
-• Two-tap logging — every set counts toward your day, your week, and your streak.
+• Two-tap logging — the wheel even opens on your usual number, so a set is done in seconds.
+• Your week at a glance — every day shows how far you got against its goal, right on the home screen.
 • A streak that survives real life — rest and sick days pause it instead of breaking it.
-• Calendar view — see every day at a glance and back-fill one you forgot.
+• Calendar view — see the whole month and back-fill a day you forgot.
 • Weekly summary — how you did, your best set, and whether your max is trending up.
-• Gentle reminders — a nudge if you've gone quiet and an evening check-in, only during your waking hours.
 • Milestones & badges — lifetime reps, streaks, personal bests, and perfect weeks.
+• Gentle reminders — a nudge if you've gone quiet and an evening check-in, only during your waking hours.
 • Aim higher — after a few strong weeks, PushOn suggests a higher target (only ever upward).
+• Phone and tablet — looks right on any screen.
 
 Private by design
 Everything stays on your device. PushOn makes no network requests — nothing is collected, shared, or sold. No account, no ads, no in-app purchases. Delete the app and all your data goes with it.
