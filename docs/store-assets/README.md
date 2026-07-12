@@ -5,17 +5,26 @@ never depends on regenerating them.
 
 ## Files
 
-| Asset | File | Spec |
+| Asset | Path | Spec |
 | --- | --- | --- |
 | App icon | `app-icon-512.png` | 512×512 PNG (≤1 MB) |
 | Feature graphic | `feature-graphic.png` | 1024×500 PNG |
-| Phone screenshots | `screenshots/01-today.png` … `04-settings.png` | 1764×3136 PNG (9:16, 320–3840 px/side) |
+| Phone screenshots | `screenshots/phone/01–04` | 1764×3136 PNG · 9:16 · 320–3840 px/side |
+| 7-inch tablet | `screenshots/tablet-7in/01–04` | 2048×1152 PNG · 16:9 · 320–3840 px/side |
+| 10-inch tablet | `screenshots/tablet-10in/01–04` | 2560×1440 PNG · 16:9 · ≥1080 px/side |
 
-Screenshots are captured from a **release** build (no debug banner) and framed
-on the brand sunshine. Upload order: Today → Calendar → Summary → Settings.
-Play needs **2–8** screenshots, and **at least 4** to be eligible for Play
-Store promotions — the four here meet that minimum. The app icon is derived
-from `assets/brand/icon-1024.png`.
+All screenshots are captured from a **release** build (no debug banner).
+Upload order in every slot: Today → Calendar → Summary → Settings.
+
+- **Phone** — the app screen framed on brand sunshine (portrait 9:16).
+- **Tablets** — PushOn is a single-column portrait app, so the tablet slots
+  use landscape marketing shots: the phone screen framed beside the wordmark
+  and a per-screen caption (16:9). The 7-inch set is the 10-inch set scaled
+  down.
+
+Play needs **2–8** screenshots per slot and **at least 4** for promotion
+eligibility — each slot here has four. The app icon is derived from
+`assets/brand/icon-1024.png`.
 
 ## Listing copy
 
