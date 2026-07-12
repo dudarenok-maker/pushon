@@ -57,7 +57,8 @@ class DaySheet extends ConsumerWidget {
             icon: const Icon(Icons.add),
             label: const Text('Add set'),
             onPressed: () async {
-              final count = await showWheelPicker(context, title: 'How many?');
+              final count = await showWheelPicker(context, title: 'How many?',
+                  initial: ref.read(defaultRepsProvider));
               if (count == null) return;
               await repo.logSet(date: date, count: count, now: ref.read(clockProvider)());
             },

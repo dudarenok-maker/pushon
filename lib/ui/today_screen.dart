@@ -41,8 +41,8 @@ class TodayScreen extends ConsumerWidget {
             loggedThisWeek: weekLogged, restDayIndexes: restIdx, todayIndex: todayIdx);
 
     Future<void> log() async {
-      final last = sets.isEmpty ? 20 : sets.last.count;
-      final count = await showWheelPicker(context, title: 'How many?', initial: last);
+      final count = await showWheelPicker(context, title: 'How many?',
+          initial: ref.read(defaultRepsProvider));
       if (count == null) return;
       final priorBest = ref.read(milestoneStatsProvider).bestSet; // before this set lands
       final now = ref.read(clockProvider)();

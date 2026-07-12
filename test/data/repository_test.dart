@@ -86,4 +86,13 @@ void main() {
     await repo.deleteSet(id: 'id-1', now: now); // the 40
     expect(await repo.watchBestSet(day, day).first, 25);
   });
+
+  test('watchRecentSetCounts: newest first, excludes deleted, honours limit', () async {
+    await repo.logSet(date: day, count: 15, now: DateTime(2026, 7, 11, 8)); // id-0
+    await repo.logSet(date: day, count: 15, now: DateTime(2026, 7, 11, 9)); // id-1
+    await repo.logSet(date: day, count: 30, now: DateTime(2026, 7, 11, 10)); // id-2
+    expect(await repo.watchRecentSetCounts(limit: 2).first, [30, 15]); // newest first
+    await repo.deleteSet(id: 'id-2', now: now); // remove the 30
+    expect(await repo.watchRecentSetCounts().first, [15, 15]);
+  });
 }
