@@ -8,6 +8,7 @@ import '../domain/distribution.dart';
 import '../state/providers.dart';
 import 'theme.dart';
 import 'widgets/day_sheet.dart';
+import 'widgets/max_width.dart';
 import 'widgets/week_strip.dart' show dayStatusColor;
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -52,7 +53,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Calendar')),
-      body: Column(children: [
+      body: MaxWidthBody(
+        child: Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           IconButton(
               icon: const Icon(Icons.chevron_left),
@@ -73,6 +75,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ),
       ]),
+      ),
     );
   }
 

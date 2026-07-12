@@ -27,6 +27,8 @@ void main() {
     await repo.logSet(date: const LocalDate(2026, 7, 11), count: 25, now: DateTime(2026, 7, 11, 8));
     await tester.pumpAndSettle();
     expect(find.text('25 / $_peak'), findsOneWidget);
+    await tester.ensureVisible(find.text('25 reps')); // may sit below the fold
+    await tester.pumpAndSettle();
     await tester.longPress(find.text('25 reps'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));

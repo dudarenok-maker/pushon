@@ -5,6 +5,11 @@ const kInk = Color(0xFF1B2A4A);
 const kCoral = Color(0xFFFF5A36);
 const kCream = Color(0xFFFFFDF4);
 
+/// Max width for screen bodies. Phones are narrower than this, so it only
+/// bites on tablets, foldables, and desktop — keeping content (and full-width
+/// buttons) a comfortable width instead of stretching edge-to-edge.
+const kContentMaxWidth = 500.0;
+
 ThemeData buildTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: kCoral,

@@ -8,6 +8,7 @@ import '../state/providers.dart';
 import 'settings_screen.dart' show requestBatteryExemption;
 import 'theme.dart';
 import 'widgets/celebration.dart';
+import 'widgets/max_width.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/week_strip.dart';
 import 'widgets/wheel_log_sheet.dart';
@@ -79,7 +80,8 @@ class TodayScreen extends ConsumerWidget {
           IconButton(icon: const Icon(Icons.settings), onPressed: () => context.push('/settings')),
         ],
       ),
-      body: ListView(
+      body: MaxWidthBody(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const WeekStrip(),
@@ -144,6 +146,7 @@ class TodayScreen extends ConsumerWidget {
               },
             ),
         ],
+      ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../state/providers.dart';
 import 'theme.dart';
+import 'widgets/max_width.dart';
 import 'widgets/wheel_log_sheet.dart';
 
 const kDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -48,7 +49,8 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: ListView(children: [
+      body: MaxWidthBody(
+        child: ListView(children: [
         ListTile(
           title: const Text('Weekly target'),
           subtitle: const Text('Changes apply from next Monday'),
@@ -110,6 +112,7 @@ class SettingsScreen extends ConsumerWidget {
           onTap: () => showLicensePage(context: context, applicationName: 'PushOn'),
         ),
       ]),
+      ),
     );
   }
 }

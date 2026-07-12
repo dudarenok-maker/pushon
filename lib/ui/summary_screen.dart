@@ -6,6 +6,7 @@ import '../domain/suggestion.dart';
 import '../state/providers.dart';
 import 'theme.dart';
 import 'widgets/badges_section.dart';
+import 'widgets/max_width.dart';
 
 /// (plan, logged-per-day, best, best-set trend) for the most recent completed
 /// week, plus the 3-week WeekResult history for the suggestion rule.
@@ -57,13 +58,15 @@ class SummaryScreen extends ConsumerWidget {
     if (data == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Summary')),
-        body: ListView(padding: const EdgeInsets.all(16), children: const [
+        body: MaxWidthBody(
+          child: ListView(padding: const EdgeInsets.all(16), children: const [
           Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Text('Your first summary arrives on Monday.', textAlign: TextAlign.center),
           ),
           BadgesSection(),
         ]),
+        ),
       );
     }
     final total = data.logged.fold(0, (a, b) => a + b);
@@ -73,7 +76,8 @@ class SummaryScreen extends ConsumerWidget {
     ].reduce((a, b) => a > b ? a : b).clamp(1, 1 << 31);
     return Scaffold(
       appBar: AppBar(title: const Text('Last week')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: MaxWidthBody(
+        child: ListView(padding: const EdgeInsets.all(16), children: [
         Text('$total / $target',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800,
@@ -151,6 +155,7 @@ class SummaryScreen extends ConsumerWidget {
         const Divider(height: 32),
         const BadgesSection(),
       ]),
+      ),
     );
   }
 }
