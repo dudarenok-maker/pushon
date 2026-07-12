@@ -30,6 +30,8 @@ class TodayScreen extends ConsumerWidget {
     final logged = totals[today.iso] ?? 0;
     final best = sets.isEmpty ? 0 : sets.map((s) => s.count).reduce((a, b) => a > b ? a : b);
     final weekLogged = totals.values.fold(0, (a, b) => a + b);
+    // Watched (not read) so its drift stream is populated before the user taps.
+    final defaultReps = ref.watch(defaultRepsProvider);
     final restIdx = <int>{
       for (var d = 0; d < 7; d++)
         if (restDays.contains(today.weekStart.addDays(d).iso)) d
@@ -41,8 +43,7 @@ class TodayScreen extends ConsumerWidget {
             loggedThisWeek: weekLogged, restDayIndexes: restIdx, todayIndex: todayIdx);
 
     Future<void> log() async {
-      final count = await showWheelPicker(context, title: 'How many?',
-          initial: ref.read(defaultRepsProvider));
+      final count = await showWheelPicker(context, title: 'How many?', initial: defaultReps);
       if (count == null) return;
       final priorBest = ref.read(milestoneStatsProvider).bestSet; // before this set lands
       final now = ref.read(clockProvider)();

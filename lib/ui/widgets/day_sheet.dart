@@ -32,6 +32,7 @@ class DaySheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sets = ref.watch(daySetsProvider(date)).value ?? const [];
     final rest = ref.watch(_dayRestProvider(date)).value ?? false;
+    final defaultReps = ref.watch(defaultRepsProvider); // populated before Add set
     final repo = ref.read(repositoryProvider);
     return SafeArea(
       child: Padding(
@@ -57,8 +58,7 @@ class DaySheet extends ConsumerWidget {
             icon: const Icon(Icons.add),
             label: const Text('Add set'),
             onPressed: () async {
-              final count = await showWheelPicker(context, title: 'How many?',
-                  initial: ref.read(defaultRepsProvider));
+              final count = await showWheelPicker(context, title: 'How many?', initial: defaultReps);
               if (count == null) return;
               await repo.logSet(date: date, count: count, now: ref.read(clockProvider)());
             },
